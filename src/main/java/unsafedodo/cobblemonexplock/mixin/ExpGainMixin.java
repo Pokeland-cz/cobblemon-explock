@@ -14,7 +14,7 @@ public class ExpGainMixin {
 	@ModifyVariable(method = "calculate", at = @At("STORE"), name = "term4", remap = false)
 	private double injectedExpGainLock(double term4, BattlePokemon battlePokemon) {
 		Pokemon pokemon = battlePokemon.getOriginalPokemon();
-		boolean state = ((IPokemonDataSaver) pokemon).getPersistentData().getBoolean("explock");
+		boolean state = ((IPokemonDataSaver) pokemon).cobblemon_explock$getPersistentData().getBoolean("explock");
 		if(!state)
 			return term4;
 		else

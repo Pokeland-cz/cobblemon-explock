@@ -1,11 +1,11 @@
 package unsafedodo.cobblemonexplock.util;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 public class ExpData {
 
     public static boolean setExpState(IPokemonDataSaver pokemon){
-        NbtCompound nbt = pokemon.getPersistentData();
+        CompoundTag nbt = pokemon.cobblemon_explock$getPersistentData();
         boolean state = nbt.getBoolean("explock");
         state = !state;
 

@@ -1,7 +1,7 @@
 package unsafedodo.cobblemonexplock.util;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 public interface IPokemonDataSaver {
-    NbtCompound getPersistentData();
+    CompoundTag cobblemon_explock$getPersistentData();
 }
