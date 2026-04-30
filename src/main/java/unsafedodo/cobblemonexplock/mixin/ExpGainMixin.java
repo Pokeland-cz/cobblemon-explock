@@ -15,7 +15,7 @@ public class ExpGainMixin {
 
     /**
      * Intercepts the experience calculation at the very beginning.
-     * If the Pokemon has "explock" set to true in its persistent data, returns 0.
+     * If the Pokemon has "explock" set to true, or has reached its "explock_level", returns 0.
      */
     @Inject(method = "calculate", at = @At("HEAD"), cancellable = true, remap = false)
     private void injectedExpGainLock(BattlePokemon battlePokemon, BattlePokemon opponentPokemon, double participationMultiplier, CallbackInfoReturnable<Integer> cir) {
@@ -25,8 +25,18 @@ public class ExpGainMixin {
         if (pokemon instanceof IPokemonDataSaver dataSaver) {
             CompoundTag data = dataSaver.cobblemon_explock$getPersistentData();
 
-            if (data != null && data.getBoolean("explock")) {
-                cir.setReturnValue(0);
+            if (data != null) {
+                // Check if completely locked
+                if (data.getBoolean("explock")) {
+                    cir.setReturnValue(0);
+                }
+                // Check if a level lock is configured
+                else if (data.contains("explock_level")) {
+                    int maxLevel = data.getInt("explock_level");
+                    if (pokemon.getLevel() >= maxLevel) {
+                        cir.setReturnValue(0);
+                    }
+                }
             }
         }
     }

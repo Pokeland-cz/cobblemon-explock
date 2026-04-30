@@ -13,9 +13,9 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import unsafedodo.cobblemonexplock.util.ExpData;
 import unsafedodo.cobblemonexplock.util.IPokemonDataSaver;
 
 public class ExpLockToggleCommand {
@@ -24,9 +24,12 @@ public class ExpLockToggleCommand {
         dispatcher.register(Commands.literal("explock")
                 .requires(Permissions.require("explock.toggle", 2))
                 .then(Commands.argument("slotNumber", IntegerArgumentType.integer(1, 6))
-                        .executes(ExpLockToggleCommand::run)));
+                        .executes(ExpLockToggleCommand::run)
+                        .then(Commands.argument("level", IntegerArgumentType.integer(1, 100))
+                                .executes(ExpLockToggleCommand::runWithLevel))));
     }
 
+    // Handles: /explock <slot>
     private static int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
 
@@ -36,7 +39,12 @@ public class ExpLockToggleCommand {
         Pokemon pokemon = partyStore.get(slot);
 
         if (pokemon != null) {
-            boolean newState = toggleExpLock(pokemon);
+            boolean newState = false;
+
+            // Route through ExpData
+            if (pokemon instanceof IPokemonDataSaver dataSaver) {
+                newState = ExpData.setExpState(dataSaver);
+            }
 
             Component message = Component.literal("Exp lock for ")
                     .append(pokemon.getDisplayName(false))
@@ -51,15 +59,33 @@ public class ExpLockToggleCommand {
         }
     }
 
-    private static boolean toggleExpLock(Pokemon pokemon) {
-        if (pokemon instanceof IPokemonDataSaver dataSaver) {
-            CompoundTag data = dataSaver.cobblemon_explock$getPersistentData();
-            boolean currentState = data.getBoolean("explock");
-            boolean newState = !currentState;
+    // Handles: /explock <slot> <level>
+    private static int runWithLevel(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
 
-            data.putBoolean("explock", newState);
-            return newState;
+        PlayerPartyStore partyStore = Cobblemon.INSTANCE.getStorage().getParty(player);
+
+        int slot = IntegerArgumentType.getInteger(context, "slotNumber") - 1;
+        int level = IntegerArgumentType.getInteger(context, "level");
+        Pokemon pokemon = partyStore.get(slot);
+
+        if (pokemon != null) {
+
+            // Route through ExpData
+            if (pokemon instanceof IPokemonDataSaver dataSaver) {
+                ExpData.setExpLevel(dataSaver, level);
+            }
+
+            Component message = Component.literal("Exp lock for ")
+                    .append(pokemon.getDisplayName(false))
+                    .append(Component.literal(" set to level " + level))
+                    .withStyle(ChatFormatting.GREEN);
+
+            context.getSource().sendSuccess(() -> message, false);
+            return Command.SINGLE_SUCCESS;
+        } else {
+            context.getSource().sendFailure(Component.literal("No Pokemon in slot " + (slot + 1)));
+            return 0;
         }
-        return false;
     }
 }
