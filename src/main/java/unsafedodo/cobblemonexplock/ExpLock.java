@@ -1,18 +1,44 @@
 package unsafedodo.cobblemonexplock;
 
+import com.cobblemon.mod.common.api.Priority;
+import com.cobblemon.mod.common.api.events.CobblemonEvents;
+import com.cobblemon.mod.common.api.events.pokemon.ExperienceGainedEvent;
+import com.cobblemon.mod.common.api.events.pokemon.interaction.ExperienceCandyUseEvent;
 import net.fabricmc.api.ModInitializer;
-
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import unsafedodo.cobblemonexplock.common.RegisterCommands;
 
 public class ExpLock implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("cobblemon-explock");
 
-	@Override
-	public void onInitialize() {
-		LOGGER.info("cobblemon-explock loaded!");
+    @Override
+    public void onInitialize() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+                ExpLockCommands.register(dispatcher));
 
-		RegisterCommands.register();
-	}
+        // Every exp source (battles, candies, commands, other mods) goes through Pokemon.addExperience,
+        // which fires this event. LOWEST so the cap applies after other mods adjust the amount.
+        CobblemonEvents.EXPERIENCE_GAINED_EVENT_PRE.subscribe(Priority.LOWEST, ExpLock::onExperienceGained);
+
+        // Refuse candies up front so they aren't consumed on a locked or capped Pokémon.
+        CobblemonEvents.EXPERIENCE_CANDY_USE_PRE.subscribe(Priority.NORMAL, ExpLock::onCandyUse);
+
+        LOGGER.info("cobblemon-explock loaded!");
+    }
+
+    private static void onExperienceGained(ExperienceGainedEvent.Pre event) {
+        int allowed = ExpLockData.allowedExperience(event.getPokemon(), event.getExperience());
+        if (allowed <= 0) {
+            event.cancel();
+        } else if (allowed < event.getExperience()) {
+            event.setExperience(allowed);
+        }
+    }
+
+    private static void onCandyUse(ExperienceCandyUseEvent.Pre event) {
+        if (ExpLockData.allowedExperience(event.getPokemon(), 1) <= 0) {
+            event.cancel();
+        }
+    }
 }

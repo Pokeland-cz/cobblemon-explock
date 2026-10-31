@@ -19,14 +19,11 @@
 			"unsafedodo.cobblemonexplock.ExpLock"
 		]
 	},
-	"mixins": [
-		"cobblemon-explock.mixins.json"
-	],
 	"depends": {
-		"fabricloader": ">=0.16.0",
+		"fabricloader": ">=0.17.2",
 		"minecraft": "~1.21.1",
 		"java": ">=21",
 		"fabric-api": "*",
-		"cobblemon": ">=1.7.0+1.21.1"
+		"cobblemon": ">=1.8+1.21.1"
 	}
 }
