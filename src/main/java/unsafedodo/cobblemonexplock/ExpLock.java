@@ -4,7 +4,10 @@ import com.cobblemon.mod.common.api.Priority;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.pokemon.ExperienceGainedEvent;
 import com.cobblemon.mod.common.api.events.pokemon.interaction.ExperienceCandyUseEvent;
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import net.fabricmc.api.ModInitializer;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +40,16 @@ public class ExpLock implements ModInitializer {
     }
 
     private static void onCandyUse(ExperienceCandyUseEvent.Pre event) {
-        if (ExpLockData.allowedExperience(event.getPokemon(), 1) <= 0) {
-            event.cancel();
+        Pokemon pokemon = event.getPokemon();
+        if (ExpLockData.allowedExperience(pokemon, 1) > 0) {
+            return;
         }
+        event.cancel();
+
+        Component reason = ExpLockData.isLocked(pokemon)
+                ? Component.literal(" has its exp locked")
+                : Component.literal(" has reached its exp lock level (" + ExpLockData.getLevelCap(pokemon) + ")");
+        event.getPlayer().displayClientMessage(
+                pokemon.getDisplayName(false).copy().append(reason).withStyle(ChatFormatting.RED), true);
     }
 }
